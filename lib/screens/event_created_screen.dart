@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:festymap/providers/event_provider.dart';
+import 'package:festymap/services/notification_service.dart';
 
 class EventoCreadoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final eventProvider = Provider.of<EventProvider>(context);
+    final ultimoEvento =
+        eventProvider.eventos.isNotEmpty ? eventProvider.eventos.last : null;
+
+    // Enviar notificación al Wear OS
+    if (ultimoEvento != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await NotificationService().showWearOSNotification(
+          title: "Nuevo evento creado!",
+          body: "${ultimoEvento.titulo} en ${ultimoEvento.ciudad}",
+        );
+      });
+    }
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -46,6 +63,21 @@ class EventoCreadoScreen extends StatelessWidget {
                     style: GoogleFonts.poppins(
                         fontSize: 16, color: Colors.white70),
                   ),
+                  if (ultimoEvento != null) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      "${ultimoEvento.titulo}",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      "${ultimoEvento.ciudad}, ${ultimoEvento.fecha}",
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ],
                   const SizedBox(height: 30),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -56,7 +88,6 @@ class EventoCreadoScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () {
-                      // Regresa a la pantalla principal o donde quieras
                       Navigator.popUntil(context, (route) => route.isFirst);
                     },
                     child: Text(
