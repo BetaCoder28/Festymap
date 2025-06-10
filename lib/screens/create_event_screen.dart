@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:festymap/providers/event_provider.dart';
 import 'package:festymap/models/event_model.dart';
+import 'package:geocoding/geocoding.dart';
 
 class CrearEventoScreen extends StatefulWidget {
   @override
@@ -31,7 +32,13 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjX_1UmOuQ-9EsN3st7-O7ZfP3bePJfPjgQo7RL3_m0eBFZiciz4d8W8eXN0YnLKGp-XjtHw-2pubFH0eClOxT4hwJktowGE1O2NW2z2CIz8Td7wzn9Ao2uUIL4-UxLZA_6oJydpnEl-ybp/s1600/neon-party-fiesta-decoracion-uv-14.jpg",
     "https://i2.wp.com/lostinanime.com/wp-content/uploads/2018/01/Devilman-Crybaby-01-27.jpg?w=780",
     "https://cdn2.actitudfem.com/media/files/styles/gallerie_carousel/public/images/2018/01/fiestaneon.jpg",
-    "https://www.creativefabrica.com/wp-content/uploads/2020/02/09/Neon-party-flyer-template-Graphics-1-1.jpg"
+    "https://www.creativefabrica.com/wp-content/uploads/2020/02/09/Neon-party-flyer-template-Graphics-1-1.jpg",
+    "https://reservandonos.com/blog/wp-content/uploads/2022/10/antros-en-puebla-450x300.png",
+    "https://www.viajarlasvegas.com/img/vida-nocturna-las-vegas.jpg",
+    "https://cdn.evbstatic.com/s3-build/fe/build/images/4268533f51b50f55aa2e3927d257f616-nightlife.webp",
+    "https://imagenes.eleconomista.com.mx/files/image_768_448/uploads/2025/04/06/67f36245dab59.jpeg",
+    "https://espacioneon.com/wp-content/uploads/2024/07/decoracion-fiesta-neon.jpeg",
+    "https://www.mujerde10.com/wp-content/uploads/2016/11/479677450740fc660c6f75dd239093f8.jpg",
   ];
 
   // Función segura para obtener partes de la fecha
@@ -42,6 +49,69 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
     }
     return _fechaController
         .text; // Devuelve el texto completo si no se puede dividir
+  }
+
+  // Función para abrir el selector de fecha
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      locale: const Locale('es', 'ES'), // Español
+    );
+    if (picked != null) {
+      setState(() {
+        _fechaController.text =
+            "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+      });
+    }
+  }
+
+  // Función para abrir el selector de hora
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _horaController.text =
+            "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
+  // Función para buscar ubicación usando geocodificación
+  Future<void> _searchLocation() async {
+    final String address =
+        "${_calleController.text} ${_numeroController.text}, ${_ciudadController.text}, ${_estadoController.text}";
+
+    if (address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ingresa una dirección válida")),
+      );
+      return;
+    }
+
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        setState(() {
+          _selectedLocation =
+              LatLng(locations[0].latitude, locations[0].longitude);
+          _mapController.move(_selectedLocation, 15.0);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Ubicación no encontrada")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
+      );
+    }
   }
 
   @override
@@ -95,26 +165,29 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                     controller: _ciudadController),
                 _buildTextField("Estado", "Ej: Ciudad de México",
                     controller: _estadoController),
-                _buildTextField("Fecha", "dd/mm/aaaa",
-                    controller: _fechaController),
-                _buildTextField("Hora", "--:--", controller: _horaController),
+
+                // Selector de fecha con calendario
+                _buildDateField(context),
+
+                // Selector de hora con reloj
+                _buildTimeField(context),
+
+                // Botón para buscar ubicación
+                const SizedBox(height: 15),
+                Center(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10EFFF),
+                    ),
+                    onPressed: _searchLocation,
+                    child: Text(
+                      "Buscar ubicación en mapa",
+                      style: GoogleFonts.poppins(color: Colors.black),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 10),
-                Text(
-                  "Subir imagen del evento:",
-                  style: GoogleFonts.poppins(color: Colors.white),
-                ),
-                const SizedBox(height: 6),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00C3FF),
-                  ),
-                  onPressed: () {},
-                  child: const Text(
-                    "Seleccionar archivo",
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
-                const SizedBox(height: 20),
+
                 Text(
                   "Mapa del evento:",
                   style: GoogleFonts.poppins(color: Colors.white),
@@ -248,6 +321,70 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
           ),
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  // Widget para selector de fecha con calendario
+  Widget _buildDateField(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Fecha",
+            style: GoogleFonts.poppins(color: Colors.white, fontSize: 14)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _fechaController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "dd/mm/aaaa",
+            hintStyle: const TextStyle(color: Colors.white54),
+            filled: true,
+            fillColor: Colors.black26,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.calendar_today, color: Colors.white),
+              onPressed: () => _selectDate(context),
+            ),
+          ),
+          readOnly: true,
+          onTap: () => _selectDate(context),
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  // Widget para selector de hora con reloj
+  Widget _buildTimeField(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Hora",
+            style: GoogleFonts.poppins(color: Colors.white, fontSize: 14)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _horaController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "--:--",
+            hintStyle: const TextStyle(color: Colors.white54),
+            filled: true,
+            fillColor: Colors.black26,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.access_time, color: Colors.white),
+              onPressed: () => _selectTime(context),
+            ),
+          ),
+          readOnly: true,
+          onTap: () => _selectTime(context),
         ),
         const SizedBox(height: 10),
       ],

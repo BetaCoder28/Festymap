@@ -9,6 +9,7 @@ import 'providers/event_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/notification_service.dart';
 import 'screens/event_detail_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   // Asegurar que Flutter esté inicializado
@@ -48,10 +49,17 @@ class FestyMapApp extends StatelessWidget {
         theme: ThemeData.dark(),
         initialRoute: '/',
         routes: AppRoutes.routes,
-        // Manejar clics en notificaciones
         navigatorKey: NotificationService.navigatorKey,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en'), // Inglés
+          Locale('es'), // Español, puedes agregar más si necesitas
+        ],
         onGenerateRoute: (settings) {
-          // Aquí puedes manejar rutas específicas desde notificaciones
           if (settings.name == '/event_detail') {
             final eventId = settings.arguments as String;
             final eventProvider =
